@@ -6,11 +6,11 @@ export default function Home() {
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.22),transparent_55%),radial-gradient(circle_at_bottom,rgba(168,85,247,0.18),transparent_50%)]" />
 
       <h1 className="text-3xl font-semibold tracking-tight">
-        Task Manager yang ringan, rapi, dan siap kerja.
+        Task Manager Simple, Rapi dan Berfungsi Untuk Penggunaan Pribadi Dengan Server Lokal.
       </h1>
       <p className="mt-3 max-w-2xl text-zinc-300">
         Frontend Next.js (App Router) + Prisma + MySQL (Docker). Fokus: CRUD task,
-        UI clean, dan struktur project profesional.
+        UI clean, dan struktur project Sederhana.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">

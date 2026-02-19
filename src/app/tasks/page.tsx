@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Task = {
   id: number;
   title: string;
+  description: string | null;
+  dueDate: string | null; // ✅ NEW
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -13,6 +15,8 @@ type Task = {
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState(""); // ✅ NEW (datetime-local string)
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +25,12 @@ export default function TasksPage() {
     () => tasks.filter((t) => t.completed).length,
     [tasks]
   );
+
+  function formatDueDate(iso: string) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString(); // tampilkan sesuai locale user
+  }
 
   async function loadTasks() {
     setError(null);
@@ -43,8 +53,15 @@ export default function TasksPage() {
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault();
-    const clean = title.trim();
-    if (!clean) return;
+
+    const cleanTitle = title.trim();
+    const cleanDesc = description.trim();
+    const cleanDue = dueDate.trim(); // "YYYY-MM-DDTHH:mm"
+
+    if (!cleanTitle) return;
+
+    // convert datetime-local -> ISO string (UTC)
+    const dueDateIso = cleanDue ? new Date(cleanDue).toISOString() : null;
 
     setSubmitting(true);
     setError(null);
@@ -53,15 +70,25 @@ export default function TasksPage() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: clean }),
+        body: JSON.stringify({
+          title: cleanTitle,
+          description: cleanDesc ? cleanDesc : null,
+          dueDate: dueDateIso, // ✅ kirim ISO / null
+        }),
       });
+
       if (!res.ok) {
         const msg = await res.json().catch(() => ({}));
         throw new Error(msg?.message ?? "Gagal menambah task");
       }
+
       const created = (await res.json()) as Task;
       setTasks((prev) => [created, ...prev]);
+
+      // reset input
       setTitle("");
+      setDescription("");
+      setDueDate("");
     } catch (e: any) {
       setError(e?.message ?? "Terjadi error");
     } finally {
@@ -71,6 +98,7 @@ export default function TasksPage() {
 
   async function toggleTask(task: Task) {
     setError(null);
+
     // optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t))
@@ -92,6 +120,8 @@ export default function TasksPage() {
   async function deleteTask(id: number) {
     setError(null);
     const prev = tasks;
+
+    // optimistic
     setTasks((p) => p.filter((t) => t.id !== id));
 
     const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
@@ -120,19 +150,38 @@ export default function TasksPage() {
           </button>
         </div>
 
-        <form onSubmit={addTask} className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <form onSubmit={addTask} className="mt-5 flex flex-col gap-3">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Tulis task baru…"
             className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
           />
-          <button
-            disabled={submitting}
-            className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-zinc-950 hover:opacity-90 disabled:opacity-60"
-          >
-            {submitting ? "Adding..." : "Add"}
-          </button>
+
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Deskripsi (opsional)…"
+            className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
+            rows={3}
+          />
+
+          {/* ✅ NEW: target waktu (tanggal + jam) */}
+          <input
+            type="datetime-local"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
+          />
+
+          <div className="flex items-center justify-end">
+            <button
+              disabled={submitting}
+              className="rounded-xl bg-white px-6 py-2 text-sm font-semibold text-zinc-950 hover:opacity-90 disabled:opacity-60"
+            >
+              {submitting ? "Adding..." : "Add"}
+            </button>
+          </div>
         </form>
 
         {error && (
@@ -157,16 +206,34 @@ export default function TasksPage() {
               key={t.id}
               className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 hover:bg-white/[0.04]"
             >
-              <label className="flex items-center gap-3">
+              <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={t.completed}
                   onChange={() => void toggleTask(t)}
-                  className="h-4 w-4"
+                  className="mt-1 h-4 w-4"
                 />
-                <span className={`text-sm ${t.completed ? "line-through text-zinc-400" : ""}`}>
-                  {t.title}
-                </span>
+
+                <div>
+                  <span
+                    className={`text-sm ${
+                      t.completed ? "line-through text-zinc-400" : ""
+                    }`}
+                  >
+                    {t.title}
+                  </span>
+
+                  {t.description && (
+                    <p className="mt-1 text-xs text-zinc-400">{t.description}</p>
+                  )}
+
+                  {/* ✅ NEW: tampilkan deadline */}
+                  {t.dueDate && (
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Target: {formatDueDate(t.dueDate)}
+                    </p>
+                  )}
+                </div>
               </label>
 
               <button

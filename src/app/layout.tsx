@@ -29,7 +29,7 @@ export default function RootLayout({
                 priority
               />
               <span className="text-sm font-semibold tracking-wide">
-                Task Manager
+                TMP || Task Manager Pribadi
               </span>
             </Link>
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-type Params = { params: { id: string } };
+// params bisa object atau Promise (biar aman di Next versi baru)
+type Ctx = { params: { id: string } | Promise<{ id: string }> };
 
 function parseId(id: string) {
   const n = Number(id);
@@ -9,14 +10,20 @@ function parseId(id: string) {
   return n;
 }
 
-export async function PATCH(req: Request, { params }: Params) {
+async function getId(ctx: Ctx) {
+  const p = await ctx.params; // <-- kunci fix
+  return parseId(p.id);
+}
+
+export async function PATCH(req: Request, ctx: Ctx) {
   try {
-    const id = parseId(params.id);
-    if (!id) return NextResponse.json({ message: "Invalid id" }, { status: 400 });
+    const id = await getId(ctx);
+    if (!id) {
+      return NextResponse.json({ message: "Invalid id" }, { status: 400 });
+    }
 
     const body = await req.json().catch(() => null);
 
-    // tipe data update yang kita izinkan
     const data: {
       title?: string;
       completed?: boolean;
@@ -35,24 +42,22 @@ export async function PATCH(req: Request, { params }: Params) {
       data.completed = body.completed;
     }
 
-    // description optional (string / null)
+    // description optional
     if (typeof body?.description === "string") {
       data.description = body.description.trim() || null;
-    }
-    if (body?.description === null) {
+    } else if (body?.description === null) {
       data.description = null;
     }
 
-    // dueDate optional (ISO string / null)
+    // dueDate optional
     if (typeof body?.dueDate === "string") {
       const d = new Date(body.dueDate);
       if (Number.isNaN(d.getTime())) {
         return NextResponse.json({ message: "Invalid dueDate" }, { status: 400 });
       }
       data.dueDate = d;
-    }
-    if (body?.dueDate === null) {
-      data.dueDate = null; // hapus deadline
+    } else if (body?.dueDate === null) {
+      data.dueDate = null;
     }
 
     if (Object.keys(data).length === 0) {
@@ -68,7 +73,6 @@ export async function PATCH(req: Request, { params }: Params) {
   } catch (err: any) {
     console.error("PATCH /api/tasks/[id] error:", err);
 
-    // jika id tidak ditemukan
     if (err?.code === "P2025") {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
     }
@@ -77,10 +81,12 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_: Request, ctx: Ctx) {
   try {
-    const id = parseId(params.id);
-    if (!id) return NextResponse.json({ message: "Invalid id" }, { status: 400 });
+    const id = await getId(ctx);
+    if (!id) {
+      return NextResponse.json({ message: "Invalid id" }, { status: 400 });
+    }
 
     await prisma.task.delete({ where: { id } });
     return NextResponse.json({ ok: true });

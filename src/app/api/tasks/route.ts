@@ -1,11 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
+
+async function getCurrentUserId() {
+  const session = await getServerSession(authOptions);
+  const email = session?.user?.email;
+
+  if (!email) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  return user?.id ?? null;
+}
 
 export async function GET() {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
     const tasks = await prisma.task.findMany({
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
+
     return NextResponse.json(tasks);
   } catch (err) {
     console.error("GET /api/tasks error:", err);
@@ -15,16 +38,24 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => null);
 
     const title = String(body?.title ?? "").trim();
+    if (!title) {
+      return NextResponse.json({ message: "Title is required" }, { status: 400 });
+    }
+
     const descriptionRaw = body?.description;
     const description =
       typeof descriptionRaw === "string" && descriptionRaw.trim() !== ""
         ? descriptionRaw.trim()
         : null;
 
-    // dueDate: terima ISO string dari frontend
     const dueDateRaw = body?.dueDate;
     let dueDate: Date | null = null;
 
@@ -36,12 +67,13 @@ export async function POST(req: Request) {
       dueDate = d;
     }
 
-    if (!title) {
-      return NextResponse.json({ message: "Title is required" }, { status: 400 });
-    }
-
     const task = await prisma.task.create({
-      data: { title, description, dueDate },
+      data: {
+        title,
+        description,
+        dueDate,
+        userId,
+      },
     });
 
     return NextResponse.json(task, { status: 201 });

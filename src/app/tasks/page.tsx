@@ -6,7 +6,7 @@ type Task = {
   id: number;
   title: string;
   description: string | null;
-  dueDate: string | null; // ✅ NEW
+  dueDate: string | null; 
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -16,7 +16,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState(""); // ✅ NEW (datetime-local string)
+  const [dueDate, setDueDate] = useState(""); 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +133,7 @@ export default function TasksPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+      <section className="rounded-2xl border border-white/50 bg-white/[0.1] p-6">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold tracking-tight">Tasks</h2>
@@ -144,7 +144,7 @@ export default function TasksPage() {
 
           <button
             onClick={() => void loadTasks()}
-            className="mt-3 rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-200 hover:bg-white/10 sm:mt-0"
+            className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-sm text-zinc-200 hover:bg-white/10 sm:mt-0"
           >
             Refresh
           </button>
@@ -155,14 +155,14 @@ export default function TasksPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Tulis task baru…"
-            className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
+            className="w-full rounded-xl border border-white/30 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/50"
           />
 
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Deskripsi (opsional)…"
-            className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
+            className="w-full rounded-xl border border-white/30 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/50"
             rows={3}
           />
 
@@ -171,7 +171,7 @@ export default function TasksPage() {
             type="datetime-local"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20"
+            className="w-full rounded-xl border border-white/30 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/50"
           />
 
           <div className="flex items-center justify-end">
@@ -191,7 +191,7 @@ export default function TasksPage() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-2">
+      <section className="rounded-2xl border border-white/50 bg-white/[0.1] p-2">
         {loading ? (
           <div className="px-4 py-10 text-center text-sm text-zinc-400">
             Loading...
@@ -238,7 +238,7 @@ export default function TasksPage() {
 
               <button
                 onClick={() => void deleteTask(t.id)}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/10"
+                className="rounded-lg border border-white/30 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/20"
               >
                 Delete
               </button>
